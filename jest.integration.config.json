@@ -1,0 +1,20 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "roots": ["<rootDir>/__test__"],
+  "testRegex": ".*\\.spec\\.ts$",
+  "extensionsToTreatAsEsm": [".ts"],
+  "transform": {
+    "^.+\\.ts$": [
+      "ts-jest",
+      {
+        "useESM": true,
+        "tsconfig": { "isolatedModules": true, "module": "esnext", "moduleResolution": "bundler" }
+      }
+    ]
+  },
+  "moduleNameMapper": {
+    "^@/(.*)$": "<rootDir>/src/$1"
+  },
+  "testTimeout": 10000,
+  "testEnvironment": "node"
+}

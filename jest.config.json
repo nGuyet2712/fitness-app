@@ -1,0 +1,21 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "roots": ["<rootDir>/src"],
+  "testRegex": ".*\\.spec\\.ts$",
+  "extensionsToTreatAsEsm": [".ts"],
+  "transform": {
+    "^.+\\.ts$": [
+      "ts-jest",
+      {
+        "useESM": true,
+        "tsconfig": { "isolatedModules": true, "module": "esnext", "moduleResolution": "bundler" }
+      }
+    ]
+  },
+  "moduleNameMapper": {
+    "^@/(.*)$": "<rootDir>/src/$1"
+  },
+  "collectCoverageFrom": ["src/**/*.ts", "!src/**/*.spec.ts"],
+  "coverageDirectory": "<rootDir>/coverage",
+  "testEnvironment": "node"
+}

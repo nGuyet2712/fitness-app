@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-everfit}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-everfit_password}
+      POSTGRES_DB: ${DB_NAME:-everfit}
+    ports:
+      - '${DB_PORT:-5432}:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  everfit-backend:
+    build: .
+    depends_on:
+      - db
+    ports:
+      - '${PORT:-3000}:${PORT:-3000}'
+    environment:
+      PORT: ${PORT:-3000}
+      NODE_ENV: ${NODE_ENV:-local}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USERNAME: ${DB_USERNAME:-everfit}
+      DB_PASSWORD: ${DB_PASSWORD:-everfit_password}
+      DB_NAME: ${DB_NAME:-everfit}
+      DB_LOGGING: ${DB_LOGGING:-false}
+    # for local development, hot reload
+    develop:
+      watch:
+        - action: sync
+          path: ./src
+          target: /app/src
+        - action: rebuild
+          path: package.json
+        - action: rebuild
+          path: package-lock.json
+
+volumes:
+  pgdata:
