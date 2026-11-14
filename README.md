@@ -25,6 +25,7 @@ flowchart TD
     WC --> ER[Exercise resolver<br/>name → exerciseId, auto-create]
     WC --> UC[Unit conversion registry<br/>kg, lb, …]
     PC --> UC
+    PC --> ER
     PC --> PRC[PR calculator<br/>max weight, volume, Epley 1RM]
 
     WC --> DB[(PostgreSQL)]
