@@ -102,7 +102,11 @@ function asClientError(exception: unknown): ResolvedError | undefined {
   }
   const { status, statusCode, expose, message } = exception as ClientErrorLike;
   const code = typeof status === 'number' ? status : statusCode;
-  if (typeof code !== 'number' || code < 400 || code >= 500) {
+  if (
+    typeof code !== 'number' ||
+    code < HttpStatus.BAD_REQUEST ||
+    code >= HttpStatus.INTERNAL_SERVER_ERROR
+  ) {
     return undefined;
   }
   return {

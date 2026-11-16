@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { Logger } from '@nestjs/common';
+import { HttpStatus, Logger } from '@nestjs/common';
 import type { NextFunction, Request, Response } from 'express';
 import { EventEmitter } from 'node:events';
 import { requestLogger } from './request-logger.middleware';
@@ -37,13 +37,13 @@ describe('requestLogger', () => {
   });
 
   it('should call next when a request arrives', async () => {
-    const next = runRequest(200);
+    const next = runRequest(HttpStatus.OK);
 
     expect(next).toHaveBeenCalledTimes(1);
   });
 
   it('should log at log level with method, path, status and duration when the status is 2xx', async () => {
-    runRequest(201);
+    runRequest(HttpStatus.CREATED);
 
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringMatching(/^GET \/workouts 201 \d+\.\dms$/),
@@ -51,20 +51,20 @@ describe('requestLogger', () => {
   });
 
   it('should log at warn level when the status is 4xx', async () => {
-    runRequest(404);
+    runRequest(HttpStatus.NOT_FOUND);
 
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining(' 404 '));
     expect(logSpy).not.toHaveBeenCalled();
   });
 
   it('should log at error level when the status is 5xx', async () => {
-    runRequest(500);
+    runRequest(HttpStatus.INTERNAL_SERVER_ERROR);
 
     expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining(' 500 '));
   });
 
   it('should strip the query string when the URL has one', async () => {
-    runRequest(200, '/workouts?userId=u-1&cursor=abc');
+    runRequest(HttpStatus.OK, '/workouts?userId=u-1&cursor=abc');
 
     const line = logSpy.mock.calls[0][0] as string;
     expect(line).toMatch(/^GET \/workouts 200 /);

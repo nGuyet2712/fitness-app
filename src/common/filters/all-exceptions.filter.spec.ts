@@ -63,9 +63,9 @@ describe('AllExceptionsFilter', () => {
 
       filter.catch(new NotFoundException('Exercise not found'), host);
 
-      expect(response.status).toHaveBeenCalledWith(404);
+      expect(response.status).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
       expect(sentBody(response)).toMatchObject({
-        statusCode: 404,
+        statusCode: HttpStatus.NOT_FOUND,
         error: 'Not Found',
         message: ['Exercise not found'],
       });
@@ -80,9 +80,9 @@ describe('AllExceptionsFilter', () => {
 
       filter.catch(new BadRequestException(messages), host);
 
-      expect(response.status).toHaveBeenCalledWith(400);
+      expect(response.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
       expect(sentBody(response)).toMatchObject({
-        statusCode: 400,
+        statusCode: HttpStatus.BAD_REQUEST,
         error: 'Bad Request',
         message: messages,
       });
@@ -94,7 +94,7 @@ describe('AllExceptionsFilter', () => {
       filter.catch(new HttpException({}, HttpStatus.CONFLICT), host);
 
       expect(sentBody(response)).toMatchObject({
-        statusCode: 409,
+        statusCode: HttpStatus.CONFLICT,
         error: 'Conflict',
         message: ['Conflict'],
       });
@@ -106,9 +106,11 @@ describe('AllExceptionsFilter', () => {
 
       filter.catch(error, host);
 
-      expect(response.status).toHaveBeenCalledWith(500);
+      expect(response.status).toHaveBeenCalledWith(
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
       expect(sentBody(response)).toMatchObject({
-        statusCode: 500,
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         error: 'Internal Server Error',
         message: ['Internal server error'],
       });
@@ -133,14 +135,14 @@ describe('AllExceptionsFilter', () => {
       const parseError = Object.assign(
         new SyntaxError('Unexpected token } in JSON'),
         {
-          status: 400,
+          status: HttpStatus.BAD_REQUEST,
           expose: true,
         },
       );
 
       filter.catch(parseError, host);
 
-      expect(response.status).toHaveBeenCalledWith(400);
+      expect(response.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
       expect(sentBody(response).message).toEqual([
         'Unexpected token } in JSON',
       ]);
@@ -150,13 +152,15 @@ describe('AllExceptionsFilter', () => {
     it('should hide the message when a non-Nest 4xx error is not exposed', async () => {
       const { host, response } = createHost();
       const error = Object.assign(new Error('internal detail'), {
-        statusCode: 413,
+        statusCode: HttpStatus.PAYLOAD_TOO_LARGE,
         expose: false,
       });
 
       filter.catch(error, host);
 
-      expect(response.status).toHaveBeenCalledWith(413);
+      expect(response.status).toHaveBeenCalledWith(
+        HttpStatus.PAYLOAD_TOO_LARGE,
+      );
       expect(sentBody(response).message).toEqual(['Payload Too Large']);
     });
 

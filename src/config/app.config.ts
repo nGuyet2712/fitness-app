@@ -4,4 +4,5 @@ export default registerAs('app', () => ({
   port: parseInt(process.env.PORT ?? '', 10) || 3000,
   nodeEnv: process.env.NODE_ENV || 'local',
   logLevel: process.env.LOG_LEVEL || 'info',
+  requestBodyLimit: '50kb',
 }));

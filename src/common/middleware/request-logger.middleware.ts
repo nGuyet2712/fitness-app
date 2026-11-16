@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { HttpStatus, Logger } from '@nestjs/common';
 import type { NextFunction, Request, Response } from 'express';
 
 const logger = new Logger('HTTP');
@@ -16,9 +16,9 @@ export function requestLogger(
     const path = req.originalUrl.split('?')[0];
     const line = `${req.method} ${path} ${res.statusCode} ${durationMs.toFixed(1)}ms`;
 
-    if (res.statusCode >= 500) {
+    if (res.statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) {
       logger.error(line);
-    } else if (res.statusCode >= 400) {
+    } else if (res.statusCode >= HttpStatus.BAD_REQUEST) {
       logger.warn(line);
     } else {
       logger.log(line);
