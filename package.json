@@ -20,7 +20,8 @@
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.json --watch",
     "test:cov": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.json --coverage",
     "test:debug": "node --experimental-vm-modules --inspect-brk node_modules/jest/bin/jest.js --config jest.config.json --runInBand",
-    "test:integration": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.integration.config.json --runInBand",    "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js -d src/config/data-source.config.ts",
+    "test:integration": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.integration.config.json --runInBand",
+    "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js -d src/config/data-source.config.ts",
     "migration:generate": "npm run typeorm -- migration:generate",
     "migration:run": "npm run typeorm -- migration:run",
     "migration:revert": "npm run typeorm -- migration:revert",
@@ -42,6 +43,7 @@
     "rxjs": "^7.8.1",
     "typeorm": "^0.3.31",
     "typeorm-extension": "^3.9.0",
+    "uuid": "^14.0.3",
     "winston": "^3.19.0"
   },
   "devDependencies": {
@@ -53,6 +55,7 @@
     "@types/jest": "^29.5.2",
     "@types/node": "^24.0.0",
     "@types/supertest": "^7.0.0",
+    "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "dotenv": "^16.6.1",
