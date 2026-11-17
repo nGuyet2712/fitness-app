@@ -99,7 +99,124 @@ Tests and the app share that database. **The tests empty every entity table** be
 
 ## API Documentation
 
-No feature endpoints yet.
+### POST /workouts — Bulk log workout entries
+
+Log one or more workout entries for a client. Each entry records one exercise performed at a point in time, with one or more sets.
+
+**Request body:**
+
+```json
+{
+  "userId": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+  "entries": [
+    {
+      "exerciseName": "bench press",
+      "performedAt": "2026-11-17T08:30:00+07:00",
+      "sets": [
+        { "reps": 10, "weight": 60, "unit": "KG" },
+        { "reps": 8, "weight": 135, "unit": "lb" }
+      ]
+    },
+    {
+      "exerciseName": "    Farmer    CaRRy     ",
+      "performedAt": "2026-11-17T08:50:00+07:00",
+      "sets": [{ "reps": 1, "weight": 70, "unit": "lb" }]
+    }
+  ]
+}
+```
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `userId` | UUID | Required |
+| `entries` | array | Required, at least one entry |
+| `entries[].exerciseName` | string | Required, max 100 chars. Trimmed and whitespace-collapsed. Unknown names are auto-created |
+| `entries[].performedAt` | string | Required. ISO 8601 date-time with a timezone offset (`Z` or `±hh:mm`). Future dates are allowed |
+| `entries[].sets` | array | Required, at least one set |
+| `entries[].sets[].reps` | integer | Required, 1–100 |
+| `entries[].sets[].weight` | number | Required, 0–10,000. Stored as `numeric(9,3)` — PostgreSQL rounds to 3 decimal places |
+| `entries[].sets[].unit` | string | Required. Case-insensitive; stored as lowercase. Currently: `kg`, `lb` |
+
+**Body size limit:** 50 KB. A larger request gets `413 Payload Too Large`.
+
+**201 Created:**
+
+```json
+{
+  "data": [
+    {
+      "id": "0b6f…",
+      "userId": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "exerciseName": "Bench Press",
+      "performedAt": "2026-11-17T01:30:00.000Z",
+      "createdAt": "2026-11-17T09:12:03.412Z",
+      "sets": [
+        { "id": "a1…", "setOrder": 1, "reps": 10, "weight": 60, "unit": "kg", "weightKg": 60 },
+        { "id": "a2…", "setOrder": 2, "reps": 8, "weight": 135, "unit": "lb", "weightKg": 61.235 }
+      ]
+    },
+    {
+      "id": "4d2e…",
+      "userId": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "exerciseName": "Farmer Carry",
+      "performedAt": "2026-11-17T01:50:00.000Z",
+      "createdAt": "2026-11-17T09:12:03.412Z",
+      "sets": [
+        { "id": "b1…", "setOrder": 1, "reps": 1, "weight": 70, "unit": "lb", "weightKg": 31.751 }
+      ]
+    }
+  ]
+}
+```
+
+- `exerciseName` in the response is the stored name: if "Bench Press" already exists and the client sends `bench press`, the response says `Bench Press`.
+- `performedAt` is returned in UTC (`…Z`), regardless of the offset the client sent.
+- `setOrder` starts at 1 and follows the array order the client sent.
+- `weightKg` is `weight × factor`, rounded half-up to 3 decimals (the column's scale).
+
+**400 Bad Request:**
+
+```json
+{
+  "statusCode": 400,
+  "error": "Bad Request",
+  "message": [
+    "entries.0.sets.1.reps must be a positive integer",
+    "entries.0.sets.1.unit must be one of: kg, lb",
+    "entries.1.performedAt must be an ISO 8601 date-time with a timezone offset (Z or ±hh:mm)",
+    "entries.1 duplicates entries.0 (same exerciseName and performedAt)"
+  ],
+  "timestamp": "2026-11-17T09:12:03.412Z"
+}
+```
+
+**409 Conflict** — the same `(userId, exerciseName, performedAt)` already exists:
+
+```json
+{
+  "statusCode": 409,
+  "error": "Conflict",
+  "message": ["A workout entry for this user, exercise and performedAt already exists"],
+  "timestamp": "2026-11-17T09:12:03.412Z"
+}
+```
+
+If two entries in the same request share `(exerciseName, performedAt)` (case-insensitive, by UTC instant), the response is 400 instead.
+
+#### Exercise resolution and concurrent writes
+
+Clients send `exerciseName`; the service resolves it to an `exerciseId`:
+1. Match case-insensitively against the `exercises` table (unique expression index on `LOWER(name)`).
+2. If no match, `INSERT … ON CONFLICT DO NOTHING` + re-select: the exercise is auto-created.
+3. Two concurrent requests creating the same new exercise both succeed — only one row is created.
+
+#### Duplicate rule
+
+A unique composite index on `(userId, exerciseId, performedAt)` enforces that an entry for a given user and exercise at a given instant is logged exactly once. A duplicate in the database returns 409; a duplicate within one request returns 400. Two sessions of the same exercise on the same day are fine as long as they have different `performedAt` times.
+
+#### Atomicity
+
+The entire request is wrapped in a single PostgreSQL transaction. If any entry fails (e.g. a duplicate), nothing is written — entries, sets, and auto-created exercises are all rolled back.
 
 ### Errors
 
@@ -188,3 +305,16 @@ erDiagram
 2. **Relational data** — entries → sets and exercises ↔ muscle groups are naturally relational, with foreign keys and CHECK constraints enforcing integrity.
 3. **Transactions** — bulk logging is atomic across many rows and tables.
 4. **Indexing** — composite B-tree indexes match the access patterns exactly, and expression indexes give case-insensitive uniqueness.
+
+## Design Decisions & Trade-offs
+
+### Duplicate rule
+
+A unique index on `(userId, exerciseId, performedAt)` enforces that one entry per user, exercise and instant exists. The rule uses the exact UTC instant, not a calendar day, because the server doesn't know the client's timezone. A consequence: if a client always sends midnight, the second session of the same exercise that day gets a 409. The mitigation is to send the real time, documented in the API section above.
+
+### Timezone handling
+
+`performedAt` requires an ISO 8601 date-time with an explicit timezone offset. Values without an offset (like `2026-11-17T08:30:00`) are rejected with 400 — the server never assumes a timezone. The value is stored as `timestamptz` (a UTC instant). The client's original offset is not stored: anything that needs local days or weeks (history ranges, PR period comparisons) must have the client send range boundaries as instants. The upside is one unambiguous timeline with no server-side timezone logic.
+
+## What Would Change at Scale
+

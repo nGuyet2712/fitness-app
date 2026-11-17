@@ -19,9 +19,11 @@ CHECK constraints on `exercise_sets`: `reps > 0`, `weight >= 0`, `weightKg >= 0`
 ## Entity Pattern
 
 ```typescript
+import { v4 as uuidv4 } from 'uuid';
+
 @Entity('exercise_sets')
 export class ExerciseSet {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryColumn('uuid')
   id: string;
 
   @Column({ type: 'smallint' })
@@ -38,7 +40,7 @@ export class ExerciseSet {
 }
 ```
 
-- `@PrimaryGeneratedColumn('uuid')` for all single-column primary keys
+- `@PrimaryColumn('uuid')` for all single-column primary keys
 - `timestamptz` for all date columns
 - `pg` returns `numeric` as a **string**. Use a column transformer (or convert explicitly) so services work with numbers
 - Entities live in `src/db/entities/`. Register each new entity in `src/db/entities/index.ts`: re-export it and append its class to `allEntities` (an explicit list like `allMigrations` so that the app, the CLIs and the integration tests load it)
@@ -63,7 +65,7 @@ Clients send `exerciseName`; the service resolves it to `exerciseId`:
 - Generate from entity changes: `npm run migration:generate -- src/db/migrations/<MigrationName>`
 - Review generated migrations. Expression indexes (`LOWER(name)`) and CHECK constraints may need to be added or kept by hand
 - Register every new migration class in `src/db/migrations/index.ts` (`allMigrations`, oldest first). `npm run migration:run` only runs migrations in that list (the CLI data source uses `typeOrmConfig()`), so an unregistered migration is silently skipped. Keep the generated `<timestamp>-<Name>.ts` file naming
-- Use `gen_random_uuid()` for UUID defaults
+- UUIDs are generated in the app layer (`uuid` npm package), not by the database. 
 - Apply: `npm run migration:run`; revert: `npm run migration:revert`
 - The app never runs migrations on startup. The local Docker entrypoint (`scripts/local-entrypoint.sh`) runs `npm run migration:run` before starting the app; every other environment runs it as a separate deploy step
 - Migrations are the only way the schema changes: `synchronize` is always `false`, so local, test and production schemas are built the same way
