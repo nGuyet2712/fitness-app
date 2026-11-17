@@ -18,31 +18,31 @@ export class ExercisesRepository {
     private readonly repo: Repository<Exercise>,
   ) {}
 
-  /**
-   * Resolve one or more exercise names to their rows, creating any that don't
-   * exist. Names are matched case-insensitively; the returned `name` is the
-   * stored (first-inserted) casing.
-   *
-   * The caller passes every name in the request at once so this costs 2 queries
-   * instead of 2 per entry. Deduplicates and sorts names to avoid deadlocks.
-   *
-   * @returns Map keyed by **lowercased** name → `{ id, name }`.
-   */
   async resolveOrCreate(
     names: string[],
     manager: EntityManager,
   ): Promise<Map<string, ResolvedExercise>> {
-    const uniqueLower = [...new Set(names.map((n) => n.toLowerCase()))].sort();
-    if (uniqueLower.length === 0) {
+    const seen = new Map<string, string>();
+    for (const n of names) {
+      const lower = n.toLowerCase();
+      if (!seen.has(lower)) {
+        seen.set(lower, n);
+      }
+    }
+    const uniqueNames = [...seen.values()].sort((a, b) =>
+      a.toLowerCase().localeCompare(b.toLowerCase()),
+    );
+    if (uniqueNames.length === 0) {
       return new Map();
     }
+    const uniqueLower = uniqueNames.map((n) => n.toLowerCase());
 
     try {
       await manager
         .createQueryBuilder()
         .insert()
         .into(Exercise)
-        .values(mapExercisesToValues(uniqueLower))
+        .values(mapExercisesToValues(uniqueNames))
         .orIgnore()
         .execute();
 
