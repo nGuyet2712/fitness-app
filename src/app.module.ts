@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { WorkoutsModule } from './components/workouts/workouts.module';
 import appConfig from './config/app.config';
 import { databaseConfig, typeOrmConfigAsync } from './config/database.config';
 
@@ -11,6 +12,7 @@ import { databaseConfig, typeOrmConfigAsync } from './config/database.config';
       load: [appConfig, databaseConfig],
     }),
     TypeOrmModule.forRootAsync(typeOrmConfigAsync),
+    WorkoutsModule,
   ],
   controllers: [],
   providers: [],

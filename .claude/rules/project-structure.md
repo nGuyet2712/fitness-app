@@ -75,8 +75,8 @@ Utils are plain imports, so DTO decorators can use them too (e.g. `@IsIn(SUPPORT
 | Cursor encoding | Util | `src/utils/cursor.ts` | workouts history today; any future list endpoint (cursor pagination is API-wide, see `api-design.md`) |
 | PR calculator | Util | `src/components/personal-records/utils/pr-calculator.ts` | personal-records only |
 
-The exercise resolver has two methods, so case-insensitive `LOWER(name)` matching lives in one place:
-- `resolveOrCreate(name)`: write path for logging. Matches case-insensitively, else `INSERT ... ON CONFLICT DO NOTHING` + re-select
+The exercise resolver centralises case-insensitive `LOWER(name)` matching so it lives in one place:
+- `resolveOrCreate(names: string[], manager: EntityManager)`: write path for logging. Takes all names in the request at once (2 queries total, not 2 per entry). Deduplicates and sorts names to avoid deadlocks, then `INSERT ... ON CONFLICT DO NOTHING` + re-select. Runs inside the caller's transaction (receives an `EntityManager`)
 - `findByName(name)`: read-only lookup. Read endpoints (e.g. PRs) must never auto-create an exercise; an unknown name means no data
 - History's partial-match filter (`ILIKE`) is a query condition in the workouts service, not a resolver method
 
