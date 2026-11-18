@@ -2,9 +2,11 @@ import { jest } from '@jest/globals';
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { WORKOUT_ENTRY_UNIQUE_CONSTRAINT } from '../../db/entities';
+import type { WorkoutEntry } from '../../db/entities';
 import type { CreateWorkoutsDto } from './dto/create-workouts.dto';
+import type { GetWorkoutsQueryDto } from './dto/get-workouts-query.dto';
 import { WorkoutsService } from './workouts.service';
-import { BuildRowsFn } from './workouts.types';
+import { BuildRowsFn, FindHistoryParams } from './workouts.types';
 import { WorkoutsRepository } from './workouts.repository';
 
 function createMockWorkoutsRepository() {
@@ -16,6 +18,8 @@ function createMockWorkoutsRepository() {
           buildRows: BuildRowsFn,
         ) => Promise<Map<string, { id: string; name: string }>>
       >(),
+    getWorkoutEntries:
+      jest.fn<(params: FindHistoryParams) => Promise<WorkoutEntry[]>>(),
   };
 }
 
@@ -34,6 +38,36 @@ function validDto(overrides?: Partial<CreateWorkoutsDto>): CreateWorkoutsDto {
     ],
     ...overrides,
   } as CreateWorkoutsDto;
+}
+
+function mockWorkoutEntry(overrides?: Partial<WorkoutEntry>): WorkoutEntry {
+  return {
+    id: 'entry-1',
+    userId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+    exerciseId: 'ex-1',
+    exercise: {
+      id: 'ex-1',
+      name: 'Bench Press',
+      createdAt: new Date(),
+      muscleGroups: [],
+    },
+    performedAt: new Date('2026-11-17T01:30:00.000Z'),
+    createdAt: new Date('2026-11-17T02:00:00.000Z'),
+    sets: [
+      {
+        id: 'set-1',
+        workoutEntryId: 'entry-1',
+        workoutEntry: {} as WorkoutEntry,
+        setOrder: 1,
+        reps: 10,
+        weight: 60,
+        unit: 'kg',
+        weightKg: 60,
+        createdAt: new Date(),
+      },
+    ],
+    ...overrides,
+  } as WorkoutEntry;
 }
 
 describe('WorkoutsService', () => {
@@ -258,6 +292,128 @@ describe('WorkoutsService', () => {
       await expect(service.bulkCreate(validDto())).rejects.toThrow(
         'connection lost',
       );
+    });
+  });
+
+  describe('getWorkouts', () => {
+    const baseQuery: GetWorkoutsQueryDto = {
+      userId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+    };
+
+    beforeEach(() => {
+      mockRepo.getWorkoutEntries.mockResolvedValue([]);
+    });
+
+    it('should return entries from the repository', async () => {
+      mockRepo.getWorkoutEntries.mockResolvedValue([mockWorkoutEntry()]);
+
+      const result = await service.getWorkouts(baseQuery);
+
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].exerciseName).toBe('Bench Press');
+      expect(result.data[0].performedAt).toBe('2026-11-17T01:30:00.000Z');
+    });
+
+    it('should default unit to kg', async () => {
+      mockRepo.getWorkoutEntries.mockResolvedValue([mockWorkoutEntry()]);
+
+      const result = await service.getWorkouts(baseQuery);
+
+      expect(result.data[0].sets[0].weight).toBe(60);
+      expect(result.data[0].sets[0].unit).toBe('kg');
+      expect(result.data[0].sets[0].weightKg).toBe(60);
+    });
+
+    it('should convert weightKg to the requested unit', async () => {
+      mockRepo.getWorkoutEntries.mockResolvedValue([mockWorkoutEntry()]);
+
+      const result = await service.getWorkouts({ ...baseQuery, unit: 'lb' });
+
+      expect(result.data[0].sets[0].weight).toBe(132.277);
+      expect(result.data[0].sets[0].unit).toBe('lb');
+      expect(result.data[0].sets[0].weightKg).toBe(60);
+    });
+
+    it('should pass filters to the repository', async () => {
+      await service.getWorkouts({
+        ...baseQuery,
+        exerciseName: 'Bench',
+        muscleGroup: 'Chest',
+        from: '2026-11-01T00:00:00Z',
+        to: '2026-11-30T23:59:59Z',
+      });
+
+      expect(mockRepo.getWorkoutEntries).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: baseQuery.userId,
+          exerciseName: 'Bench',
+          muscleGroup: 'Chest',
+          from: '2026-11-01T00:00:00Z',
+          to: '2026-11-30T23:59:59Z',
+        }),
+      );
+    });
+
+    it('should return null cursor when no more pages', async () => {
+      mockRepo.getWorkoutEntries.mockResolvedValue([mockWorkoutEntry()]);
+
+      const result = await service.getWorkouts({ ...baseQuery, limit: 10 });
+
+      expect(result.pagination.cursor).toBeNull();
+      expect(result.pagination.limit).toBe(10);
+    });
+
+    it('should return a cursor when there are more pages', async () => {
+      const entries = [
+        mockWorkoutEntry({
+          id: 'e1',
+          performedAt: new Date('2026-11-17T10:00:00Z'),
+        }),
+        mockWorkoutEntry({
+          id: 'e2',
+          performedAt: new Date('2026-11-17T09:00:00Z'),
+        }),
+        mockWorkoutEntry({
+          id: 'e3',
+          performedAt: new Date('2026-11-17T08:00:00Z'),
+        }),
+      ];
+      mockRepo.getWorkoutEntries.mockResolvedValue(entries);
+
+      const result = await service.getWorkouts({ ...baseQuery, limit: 2 });
+
+      expect(result.data).toHaveLength(2);
+      expect(result.pagination.cursor).toBeTruthy();
+    });
+
+    it('should throw BadRequestException for malformed cursor', async () => {
+      await expect(
+        service.getWorkouts({ ...baseQuery, cursor: 'not-valid' }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException when cursor is missing required fields', async () => {
+      const badCursor = Buffer.from(JSON.stringify({ foo: 'bar' })).toString(
+        'base64url',
+      );
+
+      await expect(
+        service.getWorkouts({ ...baseQuery, cursor: badCursor }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should sort sets by setOrder', async () => {
+      const entry = mockWorkoutEntry();
+      entry.sets = [
+        { ...entry.sets[0], id: 's2', setOrder: 2 },
+        { ...entry.sets[0], id: 's1', setOrder: 1 },
+        { ...entry.sets[0], id: 's3', setOrder: 3 },
+      ];
+      mockRepo.getWorkoutEntries.mockResolvedValue([entry]);
+
+      const result = await service.getWorkouts(baseQuery);
+
+      expect(result.data[0].sets.map((s) => s.setOrder)).toEqual([1, 2, 3]);
     });
   });
 });
