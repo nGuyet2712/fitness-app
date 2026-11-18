@@ -1,12 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import {
-  ExercisesRepository,
-  ResolvedExercise,
-} from '@/components/exercises/exercises.repository';
+import { ExercisesRepository } from '@/components/exercises/exercises.repository';
 import { ExerciseSet, WorkoutEntry } from '@/db/entities';
 import { mapEntriesToValues, mapSetsToValues } from './workouts.mapper';
 import { BuildRowsFn, FindHistoryParams } from './workouts.types';
+import { ResolvedExercise } from '@/components/exercises/exercises.types';
 
 @Injectable()
 export class WorkoutsRepository {

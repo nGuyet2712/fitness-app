@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { UNIT_TO_KG } from '@/const/unit';
+import { round3 } from '@/utils/unit-conversion';
 import { DataSource } from 'typeorm';
 import type { Seeder } from 'typeorm-extension';
 
@@ -58,10 +59,6 @@ interface SetRow {
   weight: number;
   unit: string;
   weightKg: number;
-}
-
-function roundTo3(n: number): number {
-  return Math.round(n * 1000) / 1000;
 }
 
 export default class SeedWorkoutData1794992637689 implements Seeder {
@@ -211,7 +208,7 @@ export default class SeedWorkoutData1794992637689 implements Seeder {
               reps: Math.max(1, reps - s),
               weight: setWeight,
               unit,
-              weightKg: roundTo3(setWeight * (UNIT_TO_KG[unit] ?? 1)),
+              weightKg: round3(setWeight * (UNIT_TO_KG[unit] ?? 1)),
             });
           }
 

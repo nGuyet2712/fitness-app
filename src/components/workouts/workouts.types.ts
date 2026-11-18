@@ -1,4 +1,4 @@
-import type { ResolvedExercise } from '@/components/exercises/exercises.repository';
+import { ResolvedExercise } from '@/components/exercises/exercises.types';
 
 export interface CreatedWorkoutEntry {
   id: string;

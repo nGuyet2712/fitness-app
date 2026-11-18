@@ -3,11 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { type EntityManager, Repository } from 'typeorm';
 import { Exercise } from '@/db/entities';
 import { mapExercisesToValues } from './exercises.mapper';
-
-export interface ResolvedExercise {
-  id: string;
-  name: string;
-}
+import { ResolvedExercise } from './exercises.types';
 
 @Injectable()
 export class ExercisesRepository {
@@ -17,6 +13,15 @@ export class ExercisesRepository {
     @InjectRepository(Exercise)
     private readonly repo: Repository<Exercise>,
   ) {}
+
+  async findByName(name: string): Promise<ResolvedExercise | null> {
+    const row = await this.repo
+      .createQueryBuilder('e')
+      .select(['e.id', 'e.name'])
+      .where('LOWER(e.name) = LOWER(:name)', { name })
+      .getOne();
+    return row ? { id: row.id, name: row.name } : null;
+  }
 
   async resolveOrCreate(
     names: string[],
