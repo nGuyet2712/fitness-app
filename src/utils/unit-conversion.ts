@@ -1,5 +1,9 @@
 import { UNIT_TO_KG, type WeightUnit } from '../const/unit';
 
+export function round3(value: number): number {
+  return Math.round(value * 1000) / 1000;
+}
+
 /**
  * Converts a weight value to kilograms, rounded half-up to 3 decimal places.
  *
@@ -13,7 +17,7 @@ export function toKg(weight: number, unit: WeightUnit): number {
   if (factor === undefined) {
     throw new Error(`Unsupported weight unit: ${String(unit)}`);
   }
-  return Math.round(weight * factor * 1000) / 1000;
+  return round3(weight * factor);
 }
 
 /**
@@ -31,5 +35,5 @@ export function fromKg(weightKg: number, unit: WeightUnit): number {
   if (factor === undefined) {
     throw new Error(`Unsupported weight unit: ${String(unit)}`);
   }
-  return Math.round((weightKg / factor) * 1000) / 1000;
+  return round3(weightKg / factor);
 }
