@@ -15,3 +15,21 @@ export function toKg(weight: number, unit: WeightUnit): number {
   }
   return Math.round(weight * factor * 1000) / 1000;
 }
+
+/**
+ * Converts a weight from kilograms to the specified unit, rounded to three
+ * decimal places. This is the inverse of {@link toKg} and is used when
+ * returning weights to the client in their requested unit.
+ *
+ * @param weightKg - The weight in kilograms (the normalized storage value).
+ * @param unit - The target unit to convert to (e.g. `'lb'`, `'kg'`).
+ * @returns The converted weight, rounded to three decimal places.
+ * @throws {Error} If the unit is not present in the conversion registry.
+ */
+export function fromKg(weightKg: number, unit: WeightUnit): number {
+  const factor = UNIT_TO_KG[unit];
+  if (factor === undefined) {
+    throw new Error(`Unsupported weight unit: ${String(unit)}`);
+  }
+  return Math.round((weightKg / factor) * 1000) / 1000;
+}

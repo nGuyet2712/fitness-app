@@ -24,3 +24,13 @@ export async function findExerciseByName(
     .where('LOWER(e.name) = LOWER(:name)', { name })
     .getOne();
 }
+
+export async function linkExerciseToMuscleGroup(
+  exerciseId: string,
+  muscleGroupId: string,
+): Promise<void> {
+  await getTestDataSource().query(
+    'INSERT INTO exercise_muscle_groups ("exerciseId", "muscleGroupId") VALUES ($1, $2)',
+    [exerciseId, muscleGroupId],
+  );
+}
