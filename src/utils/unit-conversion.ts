@@ -1,4 +1,4 @@
-import { UNIT_TO_KG, type WeightUnit } from '../const/unit';
+import { UNIT_TO_KG, type WeightUnit } from '@/const/unit';
 
 export function round3(value: number): number {
   return Math.round(value * 1000) / 1000;

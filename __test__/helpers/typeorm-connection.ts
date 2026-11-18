@@ -1,9 +1,6 @@
 import 'dotenv/config';
 import { DataSource } from 'typeorm';
-import {
-  databaseConfig,
-  typeOrmConfig,
-} from '../../src/config/database.config';
+import { databaseConfig, typeOrmConfig } from '@/config/database.config';
 
 // The test's own connection to the app's database (`DB_*` from `.env`), used to
 // seed data before a request and check rows after it. One per test file.

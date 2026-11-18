@@ -5,10 +5,10 @@ import {
   Logger,
 } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
-import { DEFAULT_LIMIT } from '../../const/workout';
-import { WORKOUT_ENTRY_UNIQUE_CONSTRAINT } from '../../db/entities';
-import { decodeCursor, encodeCursor } from '../../utils/cursor';
-import { fromKg, toKg } from '../../utils/unit-conversion';
+import { DEFAULT_LIMIT } from '@/const/workout';
+import { WORKOUT_ENTRY_UNIQUE_CONSTRAINT } from '@/db/entities';
+import { decodeCursor, encodeCursor } from '@/utils/cursor';
+import { fromKg, toKg } from '@/utils/unit-conversion';
 import type {
   CreateEntryDto,
   CreateWorkoutsDto,

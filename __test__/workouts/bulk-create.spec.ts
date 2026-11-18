@@ -6,7 +6,7 @@ import {
   disconnectTestDb,
   getTestDataSource,
 } from '../helpers/typeorm-connection';
-import { ExerciseSet, WorkoutEntry } from '../../src/db/entities';
+import { ExerciseSet, WorkoutEntry } from '@/db/entities';
 import {
   countExercises,
   findExerciseByName,

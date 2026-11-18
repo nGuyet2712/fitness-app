@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { ExerciseSet } from '../../src/db/entities';
+import { ExerciseSet } from '@/db/entities';
 import { getTestDataSource } from '../helpers/typeorm-connection';
 
 export function exerciseSetRepo() {

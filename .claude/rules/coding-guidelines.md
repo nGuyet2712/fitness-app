@@ -20,7 +20,7 @@ import { WorkoutsService } from './workouts.service.ts';
 
 // ✅ GOOD
 import { WorkoutsService } from './workouts.service';
-import { WorkoutEntry, ExerciseSet } from '../../db/entities';
+import { WorkoutEntry, ExerciseSet } from '@/db/entities';
 ```
 
 - Always write `import`, never `require()`. TypeScript emits the `require()` calls in `dist/`

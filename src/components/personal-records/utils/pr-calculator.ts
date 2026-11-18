@@ -1,4 +1,4 @@
-import { round3 } from '../../../utils/unit-conversion';
+import { round3 } from '@/utils/unit-conversion';
 import { PersonalRecord, SetRow } from '../personal-records.types';
 
 function pickBest(

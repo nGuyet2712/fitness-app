@@ -34,7 +34,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { WorkoutsService } from './workouts.service';
-import { WorkoutEntry } from '../../db/entities';
+import { WorkoutEntry } from '@/db/entities';
 
 const module: TestingModule = await Test.createTestingModule({
   providers: [

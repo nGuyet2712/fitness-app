@@ -1,8 +1,8 @@
 import { jest } from '@jest/globals';
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { WORKOUT_ENTRY_UNIQUE_CONSTRAINT } from '../../db/entities';
-import type { WorkoutEntry } from '../../db/entities';
+import { WORKOUT_ENTRY_UNIQUE_CONSTRAINT } from '@/db/entities';
+import type { WorkoutEntry } from '@/db/entities';
 import type { CreateWorkoutsDto } from './dto/create-workouts.dto';
 import type { GetWorkoutsQueryDto } from './dto/get-workouts-query.dto';
 import { WorkoutsService } from './workouts.service';

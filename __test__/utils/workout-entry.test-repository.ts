@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { WorkoutEntry } from '../../src/db/entities';
+import { WorkoutEntry } from '@/db/entities';
 import { getTestDataSource } from '../helpers/typeorm-connection';
 
 export function workoutEntryRepo() {
