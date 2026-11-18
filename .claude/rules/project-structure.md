@@ -95,6 +95,7 @@ src/components/<feature>/
 ├── <feature>.module.ts
 ├── <feature>.controller.ts
 ├── <feature>.service.ts
+├── <feature>.repository.ts
 ├── <feature>.service.spec.ts
 ├── <name>.service.ts             # optional: feature-only provider (has dependencies), in this module's providers, not exported
 ├── utils/                        # optional: feature-only pure functions, e.g. pr-calculator.ts (+ pr-calculator.spec.ts)
@@ -108,6 +109,7 @@ src/components/<feature>/
 | Entity | `src/db/entities/<name>.entity.ts` | `workout-entry.entity.ts` |
 | Controller | `<feature>.controller.ts` | `workouts.controller.ts` |
 | Service | `<feature>.service.ts` | `workouts.service.ts` |
+| Repository | `<feature>.repository.ts` | `workouts.repository.ts` |
 | Module | `<feature>.module.ts` | `workouts.module.ts` |
 | DTO | `dto/<action>-<name>.dto.ts` | `create-workout.dto.ts` |
 | Shared provider | `src/common/<area>/<name>.service.ts` | `src/common/exercises/exercise-resolver.service.ts` |

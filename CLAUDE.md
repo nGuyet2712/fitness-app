@@ -76,6 +76,7 @@ src/components/<feature>/
 ├── <feature>.module.ts
 ├── <feature>.controller.ts
 ├── <feature>.service.ts
+├── <feature>.repository.ts
 ├── <feature>.service.spec.ts
 └── dto/
 ```
