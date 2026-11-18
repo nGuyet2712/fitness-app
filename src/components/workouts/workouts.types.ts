@@ -44,3 +44,40 @@ export interface PgDriverError {
   code?: string;
   constraint?: string;
 }
+
+export interface FindHistoryParams {
+  userId: string;
+  exerciseName?: string;
+  muscleGroup?: string;
+  from?: string;
+  to?: string;
+  cursorPerformedAt?: string;
+  cursorId?: string;
+  limit: number;
+}
+
+export interface WorkoutHistoryEntry {
+  id: string;
+  userId: string;
+  exerciseName: string;
+  performedAt: string;
+  createdAt: string;
+  sets: WorkoutHistorySet[];
+}
+
+export interface WorkoutHistorySet {
+  id: string;
+  setOrder: number;
+  reps: number;
+  weight: number;
+  unit: string;
+  weightKg: number;
+}
+
+export interface WorkoutHistoryResponse {
+  data: WorkoutHistoryEntry[];
+  pagination: {
+    limit: number;
+    cursor: string | null;
+  };
+}

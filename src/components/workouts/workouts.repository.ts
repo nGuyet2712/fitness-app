@@ -6,7 +6,7 @@ import {
 } from '@/components/exercises/exercises.repository';
 import { ExerciseSet, WorkoutEntry } from '@/db/entities';
 import { mapEntriesToValues, mapSetsToValues } from './workouts.mapper';
-import { BuildRowsFn } from './workouts.types';
+import { BuildRowsFn, FindHistoryParams } from './workouts.types';
 
 @Injectable()
 export class WorkoutsRepository {
@@ -16,6 +16,57 @@ export class WorkoutsRepository {
     private readonly dataSource: DataSource,
     private readonly exercisesRepository: ExercisesRepository,
   ) {}
+
+  async getWorkoutEntries(params: FindHistoryParams): Promise<WorkoutEntry[]> {
+    const queryBuilder = this.dataSource
+      .getRepository(WorkoutEntry)
+      .createQueryBuilder('entry')
+      .innerJoinAndSelect('entry.exercise', 'exercise')
+      .leftJoinAndSelect('entry.sets', 'sets')
+      .where('entry.userId = :userId', { userId: params.userId });
+
+    if (params.exerciseName) {
+      const escaped = params.exerciseName.replace(/[%_\\]/g, '\\$&');
+      queryBuilder.andWhere('exercise.name ILIKE :exerciseName', {
+        exerciseName: `%${escaped}%`,
+      });
+    }
+
+    if (params.from) {
+      queryBuilder.andWhere('entry.performedAt >= :from', {
+        from: params.from,
+      });
+    }
+
+    if (params.to) {
+      queryBuilder.andWhere('entry.performedAt <= :to', { to: params.to });
+    }
+
+    if (params.muscleGroup) {
+      queryBuilder
+        .innerJoin('exercise.muscleGroups', 'mg')
+        .andWhere('LOWER(mg.name) = LOWER(:muscleGroup)', {
+          muscleGroup: params.muscleGroup,
+        });
+    }
+
+    if (params.cursorPerformedAt && params.cursorId) {
+      queryBuilder.andWhere(
+        '(entry.performedAt < :cursorPerformedAt OR (entry.performedAt = :cursorPerformedAt AND entry.id > :cursorId))',
+        {
+          cursorPerformedAt: params.cursorPerformedAt,
+          cursorId: params.cursorId,
+        },
+      );
+    }
+
+    queryBuilder
+      .orderBy('entry.performedAt', 'DESC')
+      .addOrderBy('entry.id', 'ASC')
+      .take(params.limit + 1);
+
+    return queryBuilder.getMany();
+  }
 
   /**
    * Resolves exercise names and inserts workout entries + sets in a single

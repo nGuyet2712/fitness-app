@@ -5,25 +5,103 @@ import {
   Logger,
 } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
+import { DEFAULT_LIMIT } from '../../const/workout';
 import { WORKOUT_ENTRY_UNIQUE_CONSTRAINT } from '../../db/entities';
-import { toKg } from '../../utils/unit-conversion';
+import { decodeCursor, encodeCursor } from '../../utils/cursor';
+import { fromKg, toKg } from '../../utils/unit-conversion';
 import type {
   CreateEntryDto,
   CreateWorkoutsDto,
 } from './dto/create-workouts.dto';
+import type { GetWorkoutsQueryDto } from './dto/get-workouts-query.dto';
 import { WorkoutsRepository } from './workouts.repository';
 import type {
   CreatedWorkoutEntry,
   InsertEntryRow,
   InsertSetRow,
   PgDriverError,
+  WorkoutHistoryResponse,
 } from './workouts.types';
+import { SUPPORTED_UNITS } from '@/const/unit';
 
 @Injectable()
 export class WorkoutsService {
   private readonly logger = new Logger(WorkoutsService.name);
 
   constructor(private readonly workoutsRepository: WorkoutsRepository) {}
+
+  async getWorkouts(
+    query: GetWorkoutsQueryDto,
+  ): Promise<WorkoutHistoryResponse> {
+    const limit = query.limit ?? DEFAULT_LIMIT;
+    const unit = query.unit ?? SUPPORTED_UNITS[0]; // 'kg'
+
+    let cursorPerformedAt: string | undefined;
+    let cursorId: string | undefined;
+
+    if (query.cursor) {
+      try {
+        const decoded = decodeCursor(query.cursor);
+        if (
+          typeof decoded.performedAt !== 'string' ||
+          typeof decoded.id !== 'string'
+        ) {
+          throw new Error('Invalid cursor shape');
+        }
+        cursorPerformedAt = decoded.performedAt;
+        cursorId = decoded.id;
+      } catch {
+        throw new BadRequestException('Malformed cursor');
+      }
+    }
+
+    const entries = await this.workoutsRepository.getWorkoutEntries({
+      userId: query.userId,
+      exerciseName: query.exerciseName,
+      muscleGroup: query.muscleGroup,
+      from: query.from,
+      to: query.to,
+      cursorPerformedAt,
+      cursorId,
+      limit,
+    });
+
+    const hasNextPage = entries.length > limit;
+    const page = hasNextPage ? entries.slice(0, limit) : entries;
+
+    let nextCursor: string | null = null;
+    if (hasNextPage) {
+      const last = page[page.length - 1];
+      nextCursor = encodeCursor({
+        performedAt: last.performedAt.toISOString(),
+        id: last.id,
+      });
+    }
+
+    return {
+      data: page.map((entry) => ({
+        id: entry.id,
+        userId: entry.userId,
+        exerciseName: entry.exercise.name,
+        performedAt: entry.performedAt.toISOString(),
+        createdAt: entry.createdAt.toISOString(),
+        sets: [...entry.sets]
+          .sort((a, b) => a.setOrder - b.setOrder)
+          .map((s) => ({
+            id: s.id,
+            setOrder: s.setOrder,
+            reps: s.reps,
+            weight: fromKg(s.weightKg, unit),
+            unit,
+            weightKg: s.weightKg,
+          })),
+      })),
+      pagination: {
+        limit,
+        cursor: nextCursor,
+      },
+    };
+  }
 
   async bulkCreate(dto: CreateWorkoutsDto): Promise<CreatedWorkoutEntry[]> {
     const { userId, entries } = dto;
